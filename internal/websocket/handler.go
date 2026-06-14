@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	
+
 	"github.com/gorilla/websocket"
 
 	"webrtc/internal/sip"
@@ -157,19 +157,21 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("✅ [%s] Browser answered incoming call", ext)
 			ast.Respond200SDP(invite, msg.SDP)
-case "hangup":
-	log.Printf("📵 [%s] hangup", ext)
-	asteriskMu.RLock()
-	ast, ok := asteriskConns[ext]
-	asteriskMu.RUnlock()
-	if ok && ast != nil {
-		ast.SendBye()
-		ast.Mu.Lock()
-		ast.PendingInvite.Active = false
-		ast.PendingInvite = sip.PendingInviteState{}
-		ast.Mu.Unlock()
-	}
-	SendStatusToBrowser(ext, "hangup")
+
+		case "hangup":
+			log.Printf("📵 [%s] hangup", ext)
+			asteriskMu.RLock()
+			ast, ok := asteriskConns[ext]
+			asteriskMu.RUnlock()
+			if ok && ast != nil {
+				ast.SendBye()
+				ast.Mu.Lock()
+				ast.PendingInvite.Active = false
+				ast.PendingInvite = sip.PendingInviteState{}
+				ast.Mu.Unlock()
+			}
+			SendStatusToBrowser(ext, "hangup")
+
 		case "reject":
 			asteriskMu.RLock()
 			ast, ok := asteriskConns[ext]
@@ -182,6 +184,7 @@ case "hangup":
 					ast.RespondSIP(invite, "486 Busy Here")
 				}
 			}
+			SendStatusToBrowser(ext, "call_failed")
 
 		case "dtmf":
 			asteriskMu.RLock()
