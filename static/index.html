@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC SIP Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+        <h1 class="text-2xl font-bold text-center mb-6 text-blue-600">WebRTC SIP Client</h1>
+        
+        <!-- إعدادات الاتصال -->
+        <div class="space-y-4 mb-6">
+            <input id="server" type="text" placeholder="IP Asterisk ( 192.168.8.24)" class="w-full p-2 border rounded" value="192.168.0.100">
+            <div class="flex gap-2">
+                <input id="extension" type="text" placeholder="الرقم (6001)" class="w-1/2 p-2 border rounded" value="6001">
+                <input id="password" type="password" placeholder="كلمة المرور" class="w-1/2 p-2 border rounded" value="123456">
+            </div>
+            <button onclick="register()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition">تسجيل الدخول</button>
+            <div id="connectionStatus" class="text-sm text-center font-medium">🔴 غير متصل</div>
+        </div>
+
+        <!-- لوحة المكالمة الواردة -->
+        <div id="incomingPanel" class="incoming-panel hidden">
+            <span>📞 مكالمة واردة من <span id="incomingNumber">---</span></span>
+            <button onclick="answerCall()" class="btn-answer">رد</button>
+            <button onclick="rejectCall()" class="btn-reject">رفض</button>
+        </div>
+
+        <!-- لوحة الاتصال -->
+        <div class="bg-gray-50 p-4 rounded-xl border">
+            <div id="dialedNumber" class="text-3xl font-mono text-center mb-4 h-10 text-gray-700">🔢 أدخل الرقم</div>
+            <div id="callState" class="text-sm text-center mb-4 text-blue-500 h-5"></div>
+            
+            <div class="grid grid-cols-3 gap-4 justify-items-center">
+                <button class="dial-btn" data-digit="1">1</button>
+                <button class="dial-btn" data-digit="2">2</button>
+                <button class="dial-btn" data-digit="3">3</button>
+                <button class="dial-btn" data-digit="4">4</button>
+                <button class="dial-btn" data-digit="5">5</button>
+                <button class="dial-btn" data-digit="6">6</button>
+                <button class="dial-btn" data-digit="7">7</button>
+                <button class="dial-btn" data-digit="8">8</button>
+                <button class="dial-btn" data-digit="9">9</button>
+                <button class="dial-btn" data-digit="*">*</button>
+                <button class="dial-btn" data-digit="0">0</button>
+                <button class="dial-btn" data-digit="#">#</button>
+            </div>
+
+            <div class="flex gap-4 mt-6">
+                <button id="callBtn" onclick="makeCall()" class="flex-1 bg-green-500 text-white p-4 rounded-full text-xl font-bold hover:bg-green-600 disabled:bg-gray-300 transition">اتصال</button>
+                <button id="hangupBtn" onclick="hangup()" disabled class="flex-1 bg-red-500 text-white p-4 rounded-full text-xl font-bold hover:bg-red-600 disabled:bg-gray-300 transition">إنهاء</button>
+            </div>
+            <button onclick="clearNumber()" class="w-full mt-4 text-gray-500 hover:text-red-500 transition text-sm">مسح الرقم</button>
+        </div>
+        
+        <!-- عنصر الصوت -->
+        <audio id="remoteAudio" autoplay></audio>
+    </div>
+
+    <script src="/js/script.js"></script>
+</body>
+</html>

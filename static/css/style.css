@@ -1,0 +1,82 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.dial-btn {
+    background: #1e293b;
+    border: none;
+    border-radius: 60px;
+    padding: 18px;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.dial-btn:active {
+    transform: scale(0.95);
+    background: #334155;
+}
+
+.incoming-panel {
+    background: #f59e0b;
+    color: #1a1a2e;
+    padding: 12px;
+    border-radius: 30px;
+    text-align: center;
+    margin-bottom: 15px;
+    animation: pulse 1s infinite;
+}
+
+.hidden {
+    display: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.btn-answer {
+    background: #166534;
+    border: none;
+    color: white;
+    padding: 6px 18px;
+    border-radius: 30px;
+    margin: 0 5px;
+    cursor: pointer;
+}
+
+.btn-reject {
+    background: #7f1d1d;
+    border: none;
+    color: white;
+    padding: 6px 18px;
+    border-radius: 30px;
+    margin: 0 5px;
+    cursor: pointer;
+}
+
+#remoteAudio {
+    display: none;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
