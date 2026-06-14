@@ -2,14 +2,20 @@ package sip
 
 import (
 	"fmt"
+	"log"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 func (a *AsteriskConn) Write(raw string) {
 	a.Mu.Lock()
 	defer a.Mu.Unlock()
 	if a.Conn != nil && !a.Closed {
-		a.Conn.WriteMessage(1, []byte(raw))
+		err := a.Conn.WriteMessage(websocket.TextMessage, []byte(raw))
+		if err != nil {
+			log.Printf("⚠️ [%s] Write error: %v", a.Extension, err)
+		}
 	}
 }
 
@@ -49,13 +55,16 @@ func (a *AsteriskConn) SendRegister(authLine, toTag string) {
 }
 
 func (a *AsteriskConn) SendInvite(target, sdp, authLine string, cseq int, branch, callID string) {
+	a.Mu.Lock()
+	defer a.Mu.Unlock()
+
 	toHeader := fmt.Sprintf("To: <sip:%s@%s>", target, a.ServerIP)
 	auth := ""
 	if authLine != "" {
 		auth = authLine + "\r\n"
 	}
 
-	a.Write(fmt.Sprintf(
+	msg := fmt.Sprintf(
 		"INVITE sip:%s@%s SIP/2.0\r\n"+
 			"Via: SIP/2.0/WS %s;branch=%s;rport\r\n"+
 			"Max-Forwards: 70\r\n"+
@@ -72,14 +81,24 @@ func (a *AsteriskConn) SendInvite(target, sdp, authLine string, cseq int, branch
 		toHeader, callID, cseq,
 		a.Extension, a.LocalIP,
 		auth, len(sdp), sdp,
-	))
+	)
+
+	if a.Conn != nil && !a.Closed {
+		err := a.Conn.WriteMessage(websocket.TextMessage, []byte(msg))
+		if err != nil {
+			log.Printf("⚠️ [%s] SendInvite error: %v", a.Extension, err)
+		}
+	}
 }
 
+// دالة SendAck المصححة - يجب أن تأخذ نسخة من PendingInvite مع قفل
 func (a *AsteriskConn) SendAck(toTag string) {
 	a.Mu.Lock()
 	inv := a.PendingInvite
 	a.Mu.Unlock()
+	
 	if !inv.Active {
+		log.Printf("⚠️ [%s] SendAck called but no active invite", a.Extension)
 		return
 	}
 
@@ -88,7 +107,7 @@ func (a *AsteriskConn) SendAck(toTag string) {
 		toHeader += ";tag=" + toTag
 	}
 
-	a.Write(fmt.Sprintf(
+	ackMsg := fmt.Sprintf(
 		"ACK sip:%s@%s SIP/2.0\r\n"+
 			"Via: SIP/2.0/WS %s;branch=%s;rport\r\n"+
 			"Max-Forwards: 70\r\n"+
@@ -101,15 +120,27 @@ func (a *AsteriskConn) SendAck(toTag string) {
 		a.LocalIP, inv.Branch,
 		a.Extension, a.ServerIP, a.FromTag,
 		toHeader, inv.CallID, inv.Cseq,
-	))
+	)
+
+	a.Write(ackMsg)
+	log.Printf("📤 [%s] ACK sent", a.Extension)
 }
 
+// دالة SendBye المصححة
 func (a *AsteriskConn) SendBye() {
 	a.Mu.Lock()
-	if a.Conn == nil || a.Closed || (!a.PendingInvite.Active && a.LastCallID == "") {
-		a.Mu.Unlock()
+	defer a.Mu.Unlock()
+	
+	if a.Conn == nil || a.Closed {
+		log.Printf("⚠️ [%s] SendBye: connection closed", a.Extension)
 		return
 	}
+	
+	if !a.PendingInvite.Active && a.LastCallID == "" {
+		log.Printf("⚠️ [%s] SendBye: no active call", a.Extension)
+		return
+	}
+	
 	callID := a.PendingInvite.CallID
 	if callID == "" {
 		callID = a.LastCallID
@@ -120,10 +151,10 @@ func (a *AsteriskConn) SendBye() {
 	}
 	localTag := a.PendingInvite.LocalTag
 	remoteTag := a.PendingInvite.RemoteTag
+	
 	a.Cseq++
 	cseq := a.Cseq
 	a.PendingInvite.Active = false
-	a.Mu.Unlock()
 
 	toHeader := fmt.Sprintf("To: <sip:%s@%s>", target, a.ServerIP)
 	if remoteTag != "" {
@@ -131,7 +162,7 @@ func (a *AsteriskConn) SendBye() {
 	}
 	branch := "z9hG4bK-" + RandomHex(12)
 
-	a.Write(fmt.Sprintf(
+	byeMsg := fmt.Sprintf(
 		"BYE sip:%s@%s SIP/2.0\r\n"+
 			"Via: SIP/2.0/WS %s;branch=%s;rport\r\n"+
 			"Max-Forwards: 70\r\n"+
@@ -144,7 +175,14 @@ func (a *AsteriskConn) SendBye() {
 		a.LocalIP, branch,
 		a.Extension, a.ServerIP, localTag,
 		toHeader, callID, cseq,
-	))
+	)
+
+	err := a.Conn.WriteMessage(websocket.TextMessage, []byte(byeMsg))
+	if err != nil {
+		log.Printf("⚠️ [%s] SendBye error: %v", a.Extension, err)
+	} else {
+		log.Printf("📤 [%s] BYE sent to %s", a.Extension, target)
+	}
 }
 
 func (a *AsteriskConn) RespondSIP(raw, status string) {
