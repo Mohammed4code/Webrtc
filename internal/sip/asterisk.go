@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
 	"github.com/gorilla/websocket"
 )
 
+// تعريف الـ WSMessage هنا (إذا لم يكن معرفاً في مكان آخر)
 type WSMessage struct {
 	Type      string `json:"type"`
 	Extension string `json:"extension"`
@@ -21,10 +23,7 @@ type WSMessage struct {
 	From      string `json:"from"`
 }
 
-
 var SendToBrowser func(extension string, msg WSMessage)
-
-
 var SendStatusToBrowser func(extension, status string)
 
 func (a *AsteriskConn) StartPingLoop() {
@@ -58,7 +57,6 @@ func (a *AsteriskConn) StartPingLoop() {
 	}
 }
 
-
 func (a *AsteriskConn) ReceiveMessages() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -77,14 +75,11 @@ func (a *AsteriskConn) ReceiveMessages() {
 
 		_, raw, err := a.Conn.ReadMessage()
 		if err != nil {
-			
 			a.Mu.Lock()
 			isClosed := a.Closed
 			a.Mu.Unlock()
 			if !isClosed {
 				log.Printf("❌ [%s] read error: %v", a.Extension, err)
-			} else {
-				log.Printf("📡 [%s] Connection closed gracefully", a.Extension)
 			}
 			return
 		}
